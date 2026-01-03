@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Buddy - Player Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db; 
+            --dark: #0f172a;
+            --light: #f4f7f6;
+            --accent-orange: #ff6b35;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--light); color: #333; }
+
+        /* HERO SECTION */
+        header {
+            height: 95vh;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)), 
+                        url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjeIDiytXzG3df2aiSRlupf2Zo33hjsmIL_g&s ') center/cover;
+            color: white;
+            position: relative;
+        }
+
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 5%; position: absolute; width: 90%; top: 0; z-index: 1002;
+        }
+
+        /* USER DROPDOWN STYLES */
+        .user-profile { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            position: relative; 
+            cursor: pointer; 
+            user-select: none;
+        }
+        
+        .user-icon { font-size: 1.5rem; color: var(--primary); background: rgba(255,255,255,0.1); padding: 8px; border-radius: 50%; }
+        
+        .user-dropdown {
+            display: none;
+            position: absolute;
+            top: 130%;
+            right: 0;
+            background: white;
+            min-width: 220px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 1001;
+            overflow: hidden;
+            padding: 10px 0;
+        }
+
+        .user-dropdown.show { display: block; }
+
+        .dropdown-header { padding: 10px 20px; color: var(--dark); }
+        .dropdown-header strong { display: block; font-size: 1rem; color: var(--primary); }
+        .dropdown-header p { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+
+        .user-dropdown hr { border: 0; border-top: 1px solid #eee; margin: 10px 0; }
+
+        .user-dropdown a, .logout-btn {
+            display: flex; align-items: center; gap: 10px; padding: 12px 20px;
+            text-decoration: none; color: var(--text-main); font-size: 0.9rem;
+            transition: 0.2s; width: 100%; border: none; background: none;
+            cursor: pointer; text-align: left;
+        }
+
+        .user-dropdown a:hover, .logout-btn:hover { background: #f8fafc; color: var(--primary); }
+        .logout-btn { color: var(--danger); font-weight: bold; }
+        .logout-btn:hover { background: #fff1f2; color: var(--danger); }
+
+        .hero-content { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; }
+
+        /* DAILY ROUTINE */
+        .section-title { text-align: center; margin: 40px 0 20px; font-size: 2rem; color: var(--dark); }
+        .routine-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; padding: 0 5%; margin-bottom: 50px; }
+        .routine-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .routine-card i { font-size: 2rem; color: var(--primary); margin-bottom: 10px; }
+
+        /* SPORTS GRID */
+        .sports-header { display: flex; justify-content: space-between; align-items: center; padding: 0 5%; margin-top: 50px; }
+        .btn-add { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-add:hover { background: #2980b9; transform: translateY(-2px); }
+
+        .sports-grid { 
+            display: grid; 
+            gap: 25px; 
+            padding: 20px 5%; 
+            grid-template-columns: repeat(4, 1fr); 
+        }
+
+        @media (max-width: 1024px) { .sports-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 768px) { .sports-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        /* VIEW TOGGLE */
+        #viewToggleContainer { text-align: center; margin: 20px 0 50px; display: none; }
+        @media (max-width: 1024px) { #viewToggleContainer { display: block; } }
+        .btn-toggle { background: var(--dark); color: white; border: none; padding: 10px 30px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+
+        /* MODAL SYSTEM */
+        #modal, #addSportModal { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); z-index: 2000; 
+            overflow-y: auto; align-items: center; justify-content: center;
+        }
+
+        #modal.active, #addSportModal.active { display: flex; }
+
+        .modal-content {
+            background: #ffffff; color: var(--text-main); 
+            padding: 30px;
+            width: 90%; 
+            max-width: 800px; 
+            border-radius: 25px; position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            margin: auto;
+        }
+
+        .compact-modal { max-width: 450px; }
+        .close-modal { position: absolute; right: 20px; top: 15px; font-size: 24px; cursor: pointer; color: #94a3b8; }
+
+        /* FORM STYLING */
+        .form-group { text-align: left; margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.9rem; font-weight: 600; color: var(--dark); margin-bottom: 5px; padding-left: 5px; }
+        .form-container input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+
+        .modal-header-flex { display: flex; gap: 25px; flex-wrap: wrap; margin-bottom: 25px; }
+        .modal-image-main { flex: 1; min-width: 200px; border-radius: 20px; height: 280px; object-fit: cover; }
+        .modal-text-main { flex: 1.2; min-width: 250px; }
+        .subject-tag { color: var(--primary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold; font-size: 12px; }
+        .modal-title { font-size: 2.2rem; margin: 5px 0; font-weight: 900; color: var(--dark); }
+        .modal-desc { font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
+        .achiever-tag { background: #f1f5f9; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; margin: 4px; font-size: 0.85rem; font-weight: 600; }
+        .achiever-tag i { color: var(--accent-orange); }
+
+        .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+        .detail-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 15px; }
+        .detail-box h4 { color: var(--primary); margin: 0 0 10px 0; font-size: 0.85rem; text-transform: uppercase; }
+        .detail-list { list-style: none; padding: 0; font-size: 0.9rem; }
+        .detail-list li { margin: 8px 0; display: flex; align-items: center; gap: 8px; }
+
+        footer { background: var(--dark); color: white; padding: 50px 5%; text-align: center; }
+        .footer-grid { display: flex; justify-content: center; gap: 50px; flex-wrap: wrap; margin-top: 20px; }
+        .footer-col h4 { color: var(--primary); margin-bottom: 15px; }
+        .footer-col p { margin: 5px 0; opacity: 0.8; font-size: 0.9rem; }
+        .social-icons { margin-top: 20px; font-size: 1.5rem; }
+        .social-icons i { margin: 0 10px; cursor: pointer; transition: 0.3s; }
+        .social-icons i:hover { color: var(--primary); }
+
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 0.8rem; }
+        
+        .sport-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .sport-img { width: 100%; height: 180px; object-fit: cover; }
+        .sport-info { padding: 15px; }
+        .btn-details { width: 100%; padding: 10px; background: var(--dark); color: white; border: none; border-radius: 5px; cursor: pointer; transition: 0.3s; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <nav>
+            <div style="font-size: 1.5rem; font-weight: bold; letter-spacing: -1px;">SPORTS<span style="color:var(--primary)">BUDDY</span></div>
+            
+            <div class="user-profile" id="userProfileBtn">
+                <span id="navGreeting">Hello, Player</span> 
+                <i class="fas fa-user-circle user-icon"></i>
+                
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-header">
+                        <strong id="displayUserName">Loading...</strong>
+                        <p id="displayUserEmail">email@example.com</p>
+                    </div>
+                    <hr>
+                    <a href="javascript:void(0)" onclick="handleEditProfile()"><i class="fas fa-user-edit"></i> Edit Profile</a>
+                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                    <hr>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div class="hero-content">
+            <h1 style="font-size: 4rem; margin:0;">Level Up Your Game</h1>
+            <p style="font-size: 1.2rem; opacity: 0.9;">Track your routine and find your sports community</p>
+        </div>
+    </header>
+
+    <div id="addSportModal">
+        <div class="modal-content compact-modal">
+            <span class="close-modal" onclick="toggleForm()">&times;</span>
+            <div class="form-container">
+                <h2 style="margin-bottom: 20px; font-size: 1.5rem; text-align: center;">Add New Sport</h2>
+                
+                <div class="form-group">
+                    <label for="addName">Sport Name</label>
+                    <input type="text" id="addName" placeholder="e.g. Rugby">
+                </div>
+
+                <div class="form-group">
+                    <label for="addPlayers">Famous Players</label>
+                    <input type="text" id="addPlayers" placeholder="Names (comma separated)">
+                </div>
+
+                <div class="form-group">
+                    <label for="addRoutine">Daily Routine</label>
+                    <input type="text" id="addRoutine" placeholder="Tasks (comma separated)">
+                </div>
+
+                <div class="form-group">
+                    <label for="addImg">Image URL</label>
+                    <input type="text" id="addImg" placeholder="Link to sport photo">
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top: 15px;">
+                    <button class="btn-add" onclick="submitSport()" style="flex: 2; border-radius: 10px;">Save Sport</button>
+                    <button class="btn-details" onclick="toggleForm()" style="flex: 1; background: #94a3b8; border-radius: 10px;">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="section-title">Daily Routine</h2>
+    <div class="routine-container">
+        <div class="routine-card"><i class="fas fa-sun"></i><br>Wake up 5 AM</div>
+        <div class="routine-card"><i class="fas fa-walking"></i><br>5k Steps</div>
+        <div class="routine-card"><i class="fas fa-tint"></i><br>3L Water</div>
+        <div class="routine-card"><i class="fas fa-apple-alt"></i><br>Eat Healthy</div>
+        <div class="routine-card"><i class="fas fa-fire"></i><br>Warm Up</div>
+    </div>
+
+    <div class="sports-header" style="padding: 0 5%;">
+        <h2 style="margin:0;">Sports List</h2>
+        <button class="btn-add" onclick="toggleForm()">+ Add Sports</button>
+    </div>
+
+    <div class="sports-grid" id="sportsGrid"></div>
+
+    <div id="viewToggleContainer">
+        <button id="toggleBtn" class="btn-toggle" onclick="handleViewToggle()">View More</button>
+    </div>
+
+    <div id="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div id="modalData"></div>
+        </div>
+    </div>
+
+    <footer>
+        <h3>Contact SPORTS<span style="color:var(--primary)">BUDDY</span></h3>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h4>Support</h4>
+                <p><i class="fas fa-envelope"></i> support@sportsbuddy.com</p>
+                <p><i class="fas fa-phone"></i> +1 234 567 890</p>
+            </div>
+            <div class="footer-col">
+                <h4>Office</h4>
+                <p>123 Athlete Way</p>
+                <p>New York, NY 10001</p>
+            </div>
+        </div>
+        <div class="social-icons">
+            <i class="fab fa-facebook-f"></i>
+            <i class="fab fa-twitter"></i>
+            <i class="fab fa-instagram"></i>
+        </div>
+        <p style="opacity: 0.5; margin-top: 30px; font-size: 0.8rem;">&copy; 2026 SportsBuddy Dashboard. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        // SYNC USER DATA FROM LOCAL STORAGE
+        function syncUserData() {
+            const loggedName = localStorage.getItem('user_name') || "Player"; 
+            const loggedEmail = localStorage.getItem('user_email') || "player@example.com";
+
+            document.getElementById('displayUserName').innerText = loggedName;
+            document.getElementById('displayUserEmail').innerText = loggedEmail;
+            document.getElementById('navGreeting').innerText = `Hello, ${loggedName.split(' ')[0]}`;
+        }
+
+        // EDIT PROFILE LOGIC
+        function handleEditProfile() {
+            const currentName = localStorage.getItem('user_name') || "";
+            const newName = prompt("Edit your name:", currentName);
+            
+            if (newName && newName.trim() !== "") {
+                localStorage.setItem('user_name', newName);
+                syncUserData();
+                alert("Profile Updated!");
+            }
+        }
+
+        let isExpanded = false;
+        let sportsData = [
+            { name: "Basketball", img: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800", players: ["LeBron James", "Michael Jordan"], goals: ["NBA Finals MVP", "DPOY Status", "Scoring Title"], routine: ["500 Jump Shots", "40-Yard Sprints", "Defensive Sliding"], nutrition: ["High-carb Pre-game", "Magnesium Recovery", "Electrolyte Balancing"] },
+            { name: "Football", img: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800", players: ["Lionel Messi", "C. Ronaldo"], goals: ["Golden Boot", "League Title", "Champions League"], routine: ["5km Endurance Run", "Dribbling Circuit", "Penalty Practice"], nutrition: ["Lean Protein", "Isotonic Drinks", "Complex Carbs"] },
+            { name: "Badminton", img: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxAQEA8QEBAQEA8QEA8NEBAQEBAPDxAPFREWFxUVFRUYHSggGBomHRUWIzEhJSkrLi4vFx8zODMtNyktLysBCgoKDg0OGhAQGismHyUtLS0rLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSstLS0tLS0rLS0tLf/AABEIALcBEwMBIgACEQEDEQH/xAAcAAAABwEBAAAAAAAAAAAAAAAAAQIDBQYHBAj/xABDEAACAQIDBQUEBwQKAgMAAAABAgADEQQSIQUGMUFREyJSYZEHMnGBFBUjQlNioZKxwdEWM0NjcoKisuHwc8IXJNL/xAAbAQACAwEBAQAAAAAAAAAAAAABAgADBAUGB//EADIRAAICAQMDAgMHAwUAAAAAAAABAgMRBBIhEzFRMmEUIkEFgZGhsdHwI1LhFTNCwdL/2gAMAwEAAhEDEQA/ANYDxV5wUa950q8ypmtxwPicG2NjUMWmSvTVwNVNu8h6qeU6w8cUyATceUYxvZufWwRNRb1cP4wO8n+McvjKZiDrPTVSmGBBAIOhBFwR0Imbb4+zlTnr4MWPvNh7aHqafT/D6Rpzco4Zr0dkY2ZZlF4J2PgrEqQQQSCDoQRO7CbCL8SdZSdt2xRBw5ak3QJ5mPJuU3ihRS9TX5KfDl3Tcbqxjq7hr4j6w4F+Kr8lDgvNBXcNPEfUx1dw6XMn1MOBHrKvJnF4JpP9BKXn+sWm4tHnCI9ZWZlCvNTG41DpFruRh/DDyI9ZWZTeFea2NysP4RHF3Nw3gEPIvxkDH4Jsq7pYfwCOruth/APSFZEesiYpY9DBkPQ+hm4Lu1h/wx6RR3doeBfSET4yPgw3s28J9DB2L+FvQzchu/Q8C+kP6io+BfSTkV6teDC/o7+BvQwvotTwN6GbqNh0fAvpFjY1LwL6CHLFepXgwc4Op4G9IX1dWPCm/pN4+p6V/cX0E6Key6Q+4voJMsR6j2MBpbKr3/qm9I+dmVh/Zt6TeTs2n4R6CNnZ9Pwj0EvqucPoYdTHqmJ4TZla/wDVt6GSdLZtb8NvQzW0waDkPSH9GQch6TTHWNfQ5tmg3f8AIy5dnVre43pBNTFFegglnx78FH+lr+44Nl7XDAayfo4kGY9s3agJ+zazc0P/AKnnLdsjb3BWNj5ziuDXK7Hq5LnbJYZe0rR+nUkJh8YHHGdC4nWDJU4EyGiwROHD4kHQ+s6rRslTWCub1bm0cXerTAp4jjmGi1Lcn/nKRSotRqGnVUo66EN+/wAxNbSryMjt4NgUcYmVxlcDuVV0qIf4jyMGC6FzS2y7FRoV1sNROta69RKJvJu/tPAEmzV6HKvRRmUD866lPnp5ysnb+I/EjItVO7lM2ZcQvURwYheomK/XuI/EMUNuYj8Qw8g+H9zaxik6iH9LTqJif11iPxWhfW1f8VoeSfDe5tbY1PEPWAY+n4h6zE/rKt+I3rC+sa34j+snIPhvc207Rp+IesL60peJfWYicdV/Ef1MScXU8bftGHkHw/ubf9bUvGvrEnbNHxr6zEDiH8bftGJNZvE37RkJ8OvJtx27QH3x6xJ3hoD76+sxE1D1PqYRY9T6wgenXk2tt58OP7RfWNNvZhh/aD1mL3ghwToI2Nt78MPvj1jLb6Ybxj1mRQSYB0Uayd98N4xENv5hvFMovEkw7QdKJqT7/wBDz9IX/wAiYcdfQzLDEEybQbEai/tHpHgrek56vtFTkjTN0gbjL6qovuYNVNw9Joqe0O/Cm36RR34c8E/WZ9huMkKc1woh4OTbqbF2Zcv6aVPB+sEqYMEu6FfgzfFXf3EZeSeD2wy2FS7gfeHvj+cjSLcfhEzzsZOPY+o21QsWJIv+x9u21DZl59R8RyllobTD6hh8JjtOoVOZSVI5g2MmNm7eZSA4/wA66H5rz+UfifszmXaSVfMeV+Zqb7SNOxGo5jrJfZm3UcCzXHMHQj4zPqW1Vqp7wPUj/uk5mxb02LKSD16/GFVtGFyi+5sNSzDMpvz0i6VaZ7sfe0plzajgy8j/AIf5S64THU6yhkPHlzg5TEcOPYkxY8JwY3YuGra1cNh6p61KNNz6kRxatjOuk9xDjImWitYncXZjm7YKiP8Ax56P+wiMj2d7K1/+px0/r8TcfDv6S2EQpMB6kvJSMR7KdnN7pxNI/kqhv96tIravsjp9mThMTV7UcExGQo/lmRQV+Os0x3tECt3iPCpY9NTYf7TCMrbPJ5lxmFqUaj0qqNTq0yVdGFmU/wAvPgeUZvN5393RTaVINTypi6QJpudBUX8Nz06HkfnMKxuFqUaj0qyNTqocrowswP8A3mNDGNddimvcbvCvCvBCOC8F4RhSADvBeFBIKHBeFChAHeC8TBeEViiYkmC8K8IjCMQYomIJkFYpIGOsShimmqg5mtH8LxkikjsJxkkk21nDu7jiwQCCXGYvXtO3MKE4vDppxrIo/wBQH75mU9TY5FemwYAgqQb9J543i3br4cNXyfYNUYBh90Fjlv5TzdkMco+j/Zus3rpzfK7e5X4dL3oUFLjEh6kdG/0M7KVQqbqSD1EkaG1Fbu1LKeTfdPx6fu+EilMaqnWbbnhJnC01UbJNMs9xwOn7rSQ2dtSpRsUfgQRrpx4GVTZmPAHZVDZdMjk6IfCfyn9JMfRiLH0twt5GKsTRXZXKmWDQk3sQtTB+8t/n0MtOzNoLUUEHjp85iYZ1tdQwvob5WEsG7+2DROXNddTY+8D8PWI4Y7CPD7mvK4gYyu4TbtNhfMORt8Rf+E7Wx6kqLjy18Lrf9GBlbeBVBkmwBBB4SobZ21Ww2Kam62p1crI99CnA28xzHn5iTmBx99D8fMaA+kVt/Y1HHUDRqErcE06qaVKTEe8vXzHAxGty4L65dKXzLKIfY29NOvXqhWBQEUkPI5CQ3+q/ytHd9N0aO06NxanikH2Na3+h+qn9OI88wxGysXserkqgmiW+yxCXNN//AMt1U69LjWXfdve/tHWk3MCzg6HSJGbi8M1WabclOox/H4Grh6r0ayNTqocrK3EeY6g8iOM55tHtR3Y+l0BjKC3r4dTnVRdquH4kebLqwHQtzImMTQmVwnuQUKGYkwjMF4IUBkFYLwjBCjADhQQryCsF4CYRMSTCIwyYgwzCMgrDSKYxKRTTVSczWD+EOsklMjMLxkkDNkDi3dxwGCN3gl2SjBtW+m8DrhTTw5zYiuRQpc7M5tmPkBc/KWTDbJpvhFoVQHBpLTbML5u7Y3mBbN3kKVEepmZkNwTqJqu7vtBw9UKrMFPDXhOPHa1wz1tuluqeWvvRmW/W6NTZ1Y2BbDOT2b+H8jecrFPjPTm0MLh9oUHpPldHWx1/UHkZiu9/s/xGBY1KYNbDcc4Hfpj84HLzEzuvEso6dGvVleyb+b9f8lTBjNU6xyMVOMuv9JXov9xjTmdOC2lVo+43d8Dd5D8uXytORzEiZk8GyzDeGWWlt+mw+0DUz1UZ1/mP1i/pdBtRVW/5rqf1ErMEs3v6mV0RzwXnZjNnXv3pjUtmDX+B5CW/DU6ZK2r1MoJt7rXJTKRw10/cJjVKoyEMpKsOBBsZbt19unOC2tVNevaL1A8Q6c+MWWWuAbEibxm3qmDrCmvaMFvTdqlgQb5hYDqJadk71NZBVWwOgce6ZWt6KAxf2yhKdZaX2tBiVq1EGoZQRxHXWcG7+zNovSNdcN29JAyKrOFzgE3YLe5/4lWfqhnCL4ka61WlXTs3CVadQEFGAZWXzB0MqO09wUpk1cAxpuDm7Bmuh59xjqvwJI+Erewd68jU0fuKrkBXOoPQEzQ8PtxAFqMR2btlz8lbkG6Xk9XqESnU81v7gt19ol8tNjZwozIQQ6vwZWHIg9PjznJiNwtnBsQwwwbtQzm5c9nmuD2S5Tkte4sLjTlpJGtQpDFUK9KweoclULwdbaORwuOF/OSmPphqVQaWqDsh7h99so4hgdTwsfhLaVxgyXz+bcuMmZ4r2X4cYV6lOtXOI7PNTFRqIpCoeCtlXS/C5I43lE3g3VxmBCNiaQRXOVWFSm4LWJt3TfgD6T0ViKF2pUxwBNUjmFXhy07xXw8OPI8W1Nj0MYGp4iklWkpsobS1Tgzgg3Ui5FxbnfkZa4iw1DXc8zGJkjt3ANh8TXotTakadVwKbHMyoTdAW590rrzveR9opr3BQQ7QWhFyJMTF2hWhA2JhGKtDtCI2NwjHcoiSokEbEpDMNVhss00nO1jHcLxkgDI/D8Z23muDOPb3FwROaCWZK8HDFKSNRxiYBPNH1Nlj3e3uxODYEOWTmpN9Jsu6++uGxyBWKhyLFWnne8dwldkcMjFWHMG0vrtecM5us0UJpyXDNm3z9mdOtmr4LLTqHvGlwpufLwn9Jjm0cFVo1GpVUanUU2ZWFiP+POaVud7S3plaWK7y8BU5j4y+7Y2HgdsUQTlLW+zrJYVEPkenkdJosi2jlabUOmfzo811EMaEuO925uJ2ex7Rc9EmyV0ByHoGH3T8ZVGTWZnwdVf1Pmi+BIh2h2gtJuD0WCSm7WPTD4halQXAVlBtfKxtZv0/WRcEm4PRLtvRthcTUSvmyrTUBbOrFiBqRbmfKWfdzf8AwWGoFKjE2XuKiVCxJ11NrLy/WZEIcja8C/D/AC4bJLb20FxFZ6iLlRmZgDzJOpkpuVjaprrhu0YLWIUKWJW41tY9Rf0ErMfwOKajVpVk9+lUSqvxVgbfpImSVPHHc9B4BOzNEKhe1daVRsyqaasAQ3etcXsLDXXnE4DbOJehh8pwOIqnHdnV7DFoy/Rg2YlDmF6qhqd11/USX2ViUq06VWmbpVWliBYcUcfp71v8scr7LoVXpPUp0qj4dnqUS6Amm911W40N1XXylyWOxw3PL+ZCsNtVXqYkMr0mp1lwdPtroKzFAytTBtcEs2o45fhG9v7Xo7Pwz16x7lIAAC2etWPBAOpPy4ngI8KACL2oQdlmdHdVPYNlN2Un3Qqm15gvtJ3uO0cTamW+iUL06AP3z96qR1bl5W6mFvA9NPVlj6fUrWPxr1qtSrUYtUqu1R2Y5iWJ6/8AeHKcxaNkwpXk6jrQ5nhZ40YUOQbEOl4kvGjBJkRwQ7ng7SMmJMORXBHR2sSasYMSYclbijpSpHM15x0+M6KZmujscrWo7cONZ3FZxYXjJBpsiji2+oZywRcEfAmSPghQTzR9SDgTjCgTjGj6kVW+hjwMm93t58RgnBpuct9UJupkIg1imWa7W0uDjaaMZycZG/bt75YTaNPsqoTOwytTexDdRrxlO329lhTNiNnd9PebDk3IH92ef+E/LpMwpYhkYMjFWGoI0mnble08plo4vUaKKn85WpRnw+5ZLT26Z76eV9UZbUplSVYFWBIKkEEHoQeERPQG8u6WA2vTNei608Rbu1qdjm8nH3h+sxPb+wcRganZ10te+RxqjjqD/CVyrcTXp9XC72fgi7QoZhRDQCCHCkICGIUOEVmp+zneHFnCrhqGDbEtSZgHLZKa0y4dRmPMHNpcaWl2obaxtIZsZgXpoDnZ6TrVsMxbUai2vUcBIX2WYxEw2HQWGamD0u92zfO80pGBlnTm+VJr8MHGnqqU3F1J8vLzLP64X4GP+1nflalNcDhHJSoi1MRUFxdDqtL+LfIdZkTGWb2kGmNqY1aQARKoQAcAwRc4H+bNKwYMv6m6uuEI4h2789/vEwjDhQjMSYIZhQiCTChmFIKwjCMUYkwiMSYRhmJMJUxVPjH0jFPjHgZso7HK1vc7sKdZIkyIwzayTzTZB8HGujyAmCIvBHyV4OG8MRMOeaPqGQ4E4woF4xod0U2+lnRSOsdczmU6w2earuxytGv6jEPxhQEwpkOuS+w94K+EcNTdrcxc2I/jNe3d3l2ftah9Fxaqaj6FHFrnkVbkfgbzCoqlUKkMpII1BBsQZdG1pYfYw6jRwse6PEvJft9/ZpXweaths2IwvvGwvWpD8wHvL5j59ZQJqe4ntOanlw+N71PgKpzMw+PG8se8vs9wW01OKwTpRrOM2ZADQqn8yjgfMfMGGVeeYlNerlVLZevvMIglo2tuDtPDEhsJUqKPv0B2ynzGXveoEiH2DjBxweKHxw9Yf+sqwzerYSWU0R0EXVouvvI6/wCJWX98avIHJYN2953wndK56YbOoByujc8p5jylxxfteqCkUoUCKpXKKtVhZPPIL5j8SBMuglm+WMGOelqlPc1yKrVWdmZiWZiXZiblmJuST1uY2YDCMUvYUIw4UIjBCMMwjCIxNoUO8K8IjAYkiHeFCVtiTEmOZTC7IwlbaEU+MdvErSMXlM1U9jl6trJ0YCmWbSWBNnNa9pw7u0+9LlTpgLNMZ4OVbW5vOSqHCmCTVRVuYI/URm6c/JToIIJ58+nZBAOMEK8aPcqt9LHLxLGEDAZpufynM0frYIIUOZTqhgEmwBJPADjJTBbMpZVqYnECjTbMFFNRXqlwNFKA90X0udJ3bJ2Vmp2ABeqoZ3P9nSOoy34HTj8ekvuy90MHRt2yJVqMVUqXVbVT3goBYZnA4q3Lhe83V6eEYqVn17I4Oq+0rZ2OvT/Thv8AYoWHxOBQUuxwz1qpIDduSwB62FgRfyl72TvTiFei1OilEKCtaml1ot00t3fjJP6pwozIlKnlNTvW7QKay20SoGJoML8G0PnOipRS7uEYP7lWoMPUZiDxWrSynOunvjSMp1x7RMU43WY3T/IsY3noVaeUVeyrEAZBY1V56Lz05yP2hvFSKVHTEE5FC20yZuWYgaEyLq0afdBpAOigUiALoOX0es6AM35CYTVkp3e4U6drWIpoAb2ti0DDXXjb1ib14G6XuQNfeSsUFM0XasUNTMEYHJxDBbHMLSL+nU3ZTVolqJutRjT7wa3dAuLdZY6O82GDNSbtKbglqau4VagvbPhq2fLl/KTJOhtCm4NVXSpTa1MVULtSdvDUpgHIfzTVVrOnHbtRh1H2Z1ZKTk1+hUXwuySQr4MhSvvEGg+a/LKRcWnGm6OAxOc0Khw+VyoWpWFzbmMwOnzl9q0lYjtKObsu/Yq7VaXnSOS1YfCc1bZWHq940qQDXFwGpIwPVgAadT8pi9WiXqr/AJ+Q/T1kPRe8eH+7yUCp7M8Sy56FWlVBvZcy5tOtjIDae6WPw9+0w1Sw+8ozCajU3dSx7GrVoZSGuxzNStyqAtcDownRWxW1KagLVFZAL1A/Zhgo4ML3zKet5HVp5+l4/Ff+iyOu19S+f5vwf6bP+zCnBU2IIPQgg+kTY9JtGMxGHqMV2jgQqWH26Jl7x4EN7rD5yt47dLD1KhGDqNZmy0w40a4vz1HP0kf2fJ8weV/Pr2/QeP2/WsK6Li3x5/LGfwTXuZ52bdIoUDLJj9361BilVSpBte2nrGBghKPh2u5vWthNZi8ohRhY4uEEmVw6jlFFQIyoK5ashxhD0g+iGSrMIy1QS1adlEtWcQwkP6MI+1WMvVlq0zKJasQ1MCN5I5qYsLL40YMF1zmxeBYobiS77Rci0iqYj8dUoyynL6MWcQ3WCN5YI3SK8kVCibwXnmcH0zcLvEMYYvFrh3P3T+6NGLyVW2LaxoGHmnTT2dUPK06aexzzb0E0WRbRzNPbGMmRuaHmksNkKOZMUNnqOUrVLNb1cTp3b2x2bqSAxVWpkNwNNky3FraiabsvanaLmSox7hvQIxD1aYOn9YWYVVJUhQy68FF7zLkwwHAW+EldnY+pRJsuZCMrAor6WI91hYjXhOlXGNsFCfEl2f7nnNVvosdtKzF8uPv5RoqVgFbvgEA0yWLIUQHvZxWQlAST3KmZLkAOI3UNJNTlVqaDL3sGjYcNwyM4DUmY8mJQk6GQuA20lUKSAGQ06amn2iuQVAsGWovZLmYgqQy25TuxG1GprTcOvfa6faPTUrwCrlqFQdb3XunmnCU2aedfqHo1tV3pfPh9zrD0kuhFMXAqVAUwygFuDVqSVB325VKYtK1tXfBkqFKCd5DkatUZy4II7vaUmy1Vt4tOE4Nq7VavmSpiKKpclaZdigY87ZCL90cMvUSLGHohgRWog8Lt2p42/u+H5W16crooFzsI7EIzjvs1QrcZnOchbc76mP7PxtfDODh67Jp7uZTTN9CCpOU/AiSQNJbfbp3SLEUquVeV72BvbqITVKK5h21S3EkYe6k8ywLj1Aj7EK7WdNLefGjKpenlDZh9hT+zN7krlsUv1BMkKO9+KBYmnSckjMSXyOttB2d9Tpxvf5yJTEYdWHfqsbXuaSqSL3FmNXUeWnKNVMfh7DvVnJIUAmlSHnxzW/5h6a8COwt6b7obZqVYWXQ0yX7J+fff3l8mGl537N3ppVu62agygNZ2UC/EspCnK/l7plAG1cOgJCVTy1q0b/M5O9e3H4xr62w3vGjUYi9gaysBx1BVAeml9I3S9hHZ7moLjsNWsuemyvmKqRkBy2zFrqOyq6jyIMi8ZsalqVLU+9/XKyfZsT7tZGfj8Bz0lDG2KQ730YXPLtMSUJ11HeBB1nSu9FcACkrZiq01HaY4A8BlCisRm6aW04co8Iyg8xyiqzZYts0mi20cTiaYaniaJrYcE6vldSCNDmBYp1uLiRm2dhfZnEYYFqINnXi1M2vy4joeB/ScSYjaldCGwosgLL2lOsCTcZlUM1y1jfL853LiqmDZSWpdm4AypVFQOpOtlyLdbjVRfXoRNcJ7+JJZ/n5+/wCJzbaJ0vqVN48fzuvZ/c0VVqo6xlqonVt+gqOrqVIqAsQhuA1+nIMLMPIyL7QTR0kgrUynFNDrP5RttekLtBDziNsQrskxBpQuxEdzCDMIdom5iFpCOikIFIjqkSbRHJhJSjvZwKY4DDtKnJjfZwR2CHaLuZHpsxedz848mBQfdE7Qq82gunxnn1Uj2r1MmMLRUchHVToI4KqjgITYn4S2NSKJ3vAFQ9J0JRPlOA4o9YtcR5y3pGOFrydxoDmYns0nGcQOsbbGqOcZVljsJIFRyh9qOkiG2gI02PPISxVFbtJapYm/ut4lNm/5j2H2tVpa3D2RkBsMwBN/dOnESvNjG6xtqzHmZohFpYzwYroV2PLXPn6miUt68PWLmtSXMQAMmYMcx7+YE94Dj100N7SWqbmYWtTPYCnlCo5ajWJqZDdhcNcMCc2hNxbjyGR5pJ7K2/iMNcU3uje9SqAVKTfFT+8WOkrt02eYcMFNkocSbaLTtzcetTC9krhzwSqUzNpc5GsuYAciAdDpzkQ26mNt7lItc5LVAWZRxZCONvDxHSWjZXtVIIOIpNfLkYo7MpF+OQnQyZob47MrqwfsDUdlLtWp9lmF+ZAPeAJAN5lcLY94mpWQfZmdndPGkCwp5ibhczgsONwcvvAj3ePlCG6eJsSalFbgWZnrKhbwsxQZWFzobcPhNG2ztTZlKiaqs1SnpdkdK7M1jYMga7WAsGOouADrIbE72bJTUYxm+zSpemHqFlYkZWv75HNW7wFiNBF6uO4cZfBU6W6NUEXrUri4qD7UtT00JXJ7vDXh+4uf0PqkKPpFN6mpVVyuji/GmcwzegP8LRT3l2YWSmMao+zFVCDUuOmSo1yrf3bG/QXMJt49lmmpOOodnVqFLGhWyluH2ikE0jrfNYC3lJ1kHY/BXE3MuuuI797KRTVqYNvca9QWfzOhtx0vJTYe7dPDHPUvUqrde/Rq5KYPEFQ19dCKguB+7sr7y7MXtWONo3RhSYii71ieYYCwrJyzAW0B8pzVd8tk084Wq7tTUFBRp3LZvwajEWGuqN1Ite8juXkig/BPGvYtc6jU3NdWHQtl97/zrqJybYdXpVAWJLIWsjCodR7yrbXoGUWbS4U2Mr2L3+w4BGGw+JcggqzOKK6i5YEgshvoVF1OvkYS70q1MNUBzd5simwDHKbWOmjLfNYWubCSEXP0oE7FHuQe1CQhpMRenWZQosRpm4HjYEn1EirTrxVc1HZzYZmLWHAXPCMzsRjxycvOOBq0Fo7BaHBNw1aHaOZYYWDaTcIURwRQWKCyYEcgKY4DEgRYWHBW2HeCHaCHDE4AQvUxDOBzggnER6hjTVuhjFWs/K0KCWxKbOxzl3gDP5+sKCXZMsFyAk84WeCCFMtBnh54UEdMRh54M0EEbJW0ANDzQQR0xGg88MPBBGyI0DMOkNWtw0+GkEEDSfcAGseOvxJMPKn4dP8AZEEEXZHwiNvyH3fAn7Iiswtay28lUfwhQRlGPgXLDDQZoII3YGA80F4IJMgwHeC8EEOQYDzQ80EEOSYDDRYaFBBkVocDRYaCCNkraFXggghyJg//2Q==", players: ["Lin Dan", "Lee Chong Wei"], goals: ["Olympic Gold", "World No. 1", "All England Title"], routine: ["Agility Ladder", "Shadow Footwork", "Wrist Smashes"], nutrition: ["Potassium (Bananas)", "Hydration Salts", "Fast-digesting Carbs"] },
+            { name: "Tennis", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQaXEAPZUuFTHsdMLaz777VLcveAswNJ7LsHA&s", players: ["Roger Federer", "Novak Djokovic"], goals: ["Grand Slam Title", "Aces Master", "ATP Finals"], routine: ["Lateral Movement", "Serve Accuracy", "Wall Volleys"], nutrition: ["Energy Gels", "Electrolyte Mix", "Magnesium"] },
+            { name: "Cricket", img: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800", players: ["Virat Kohli", "MS Dhoni"], goals: ["World Cup Win", "Century in Finals", "Orange Cap"], routine: ["Net Practice 2hr", "Reflex Catching", "Stamina Run"], nutrition: ["Whey Protein", "Complex Carbs", "Vitamins"] },
+            { name: "Boxing", img: "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800", players: ["Canelo Alvarez", "Tyson Fury"], goals: ["Undisputed Champ", "KO Power", "Ring IQ"], routine: ["Heavy Bag 12 Rounds", "Sparring", "Jump Rope 30min"], nutrition: ["Iron Rich Diet", "Zero Sugar", "High Protein"] },
+            { name: "Swimming", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR4TlZzJ1wq3BKYVzXMof1QMRRPIYHUtndrng&s", players: ["Michael Phelps", "Katie Ledecky"], goals: ["World Record", "Gold Medal", "Perfect Stroke"], routine: ["4km Swim Mix", "Dryland Strength", "Breathing Drills"], nutrition: ["Post-swim Carbs", "Creatine", "Massive Calorie Intake"] },
+            { name: "Volleyball", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSL2Uz3xUz-wK2Ir8IvN5dxszhIZ6-iRLT13Q&s", players: ["Yuji Nishida", "Zhu Ting"], goals: ["VNL Champion", "Block King", "Jump Serve Master"], routine: ["Box Jumps", "Spiking Drills", "Reaction Time"], nutrition: ["Joint Support", "Vitamin C", "Fast Metabolism Foods"] }
+        ];
+
+        // USER DROPDOWN LOGIC
+        const userProfileBtn = document.getElementById('userProfileBtn');
+        const userDropdown = document.getElementById('userDropdown');
+
+        userProfileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('show');
+        });
+
+        window.addEventListener('click', () => {
+            userDropdown.classList.remove('show');
+        });
+
+        // LOGOUT: Redirects to index.html and clears session data
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            if(confirm("Are you sure you want to logout?")) {
+                localStorage.removeItem('user_name');
+                localStorage.removeItem('user_email');
+                alert("Logged out successfully!");
+                window.location.href = 'index.html'; 
+            }
+        });
+
+        function renderSports() {
+            const grid = document.getElementById('sportsGrid');
+            const toggleBtn = document.getElementById('toggleBtn');
+            const isLaptop = window.innerWidth > 1024;
+            
+            let displayCount = sportsData.length;
+            if (!isLaptop && !isExpanded) {
+                displayCount = 6;
+            }
+
+            grid.innerHTML = sportsData.slice(0, displayCount).map((sport, index) => `
+                <div class="sport-card">
+                    <img src="${sport.img}" class="sport-img">
+                    <div class="sport-info">
+                        <h3>${sport.name}</h3>
+                        <button class="btn-details" onclick="showDetails(${index})">View Details</button>
+                    </div>
+                </div>
+            `).join('');
+
+            toggleBtn.innerText = isExpanded ? "View Less" : "View More";
+        }
+
+        function showDetails(index) {
+            const s = sportsData[index];
+            const modalData = document.getElementById('modalData');
+            
+            modalData.innerHTML = `
+                <div class="modal-header-flex">
+                    <img src="${s.img}" class="modal-image-main">
+                    <div class="modal-text-main">
+                        <div class="subject-tag">Subject: ${s.name}</div>
+                        <h1 class="modal-title">${s.name.toUpperCase()}</h1>
+                        <p class="modal-desc">Tactical breakdown and elite training routines for the ${s.name} domain.</p>
+                        <div class="subject-tag">Elite Achievers</div>
+                        <div>${s.players.map(p => `<div class="achiever-tag"><i class="fas fa-trophy"></i> ${p}</div>`).join('')}</div>
+                        <button class="btn-delete" onclick="deleteSport(${index})"><i class="fas fa-trash"></i> Delete Sport</button>
+                    </div>
+                </div>
+                <div class="details-grid">
+                    <div class="detail-box">
+                        <h4>Mission</h4>
+                        <ul class="detail-list">${s.routine.map(r => `<li><i class="fas fa-check-circle"></i> ${r}</li>`).join('')}</ul>
+                    </div>
+                    <div class="detail-box">
+                        <h4>Goals</h4>
+                        <ul class="detail-list">${s.goals.map(g => `<li><i class="fas fa-crosshairs"></i> ${g}</li>`).join('')}</ul>
+                    </div>
+                    <div class="detail-box">
+                        <h4>Nutrition</h4>
+                        <ul class="detail-list">${s.nutrition.map(n => `<li><i class="fas fa-apple-alt"></i> ${n}</li>`).join('')}</ul>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function toggleForm() {
+            const modal = document.getElementById('addSportModal');
+            modal.classList.toggle('active');
+            document.body.style.overflow = modal.classList.contains('active') ? 'hidden' : 'auto';
+        }
+
+        function submitSport() {
+            const name = document.getElementById('addName').value;
+            const players = document.getElementById('addPlayers').value.split(',');
+            const routine = document.getElementById('addRoutine').value.split(',');
+            const img = document.getElementById('addImg').value;
+
+            if(name) {
+                sportsData.push({
+                    name: name,
+                    img: img || "https://images.unsplash.com/photo-1461896704690-47d28f96933d?w=800",
+                    players: players,
+                    goals: ["Custom Goal"],
+                    routine: routine,
+                    nutrition: ["Balanced Diet"]
+                });
+                renderSports();
+                toggleForm();
+                document.querySelectorAll('.form-container input').forEach(input => input.value = '');
+            } else { alert("Sport name is required!"); }
+        }
+
+        function deleteSport(index) {
+            if(confirm("Permanently delete this sport?")) {
+                sportsData.splice(index, 1);
+                renderSports();
+                closeModal();
+            }
+        }
+
+        function closeModal() { 
+            document.getElementById('modal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        window.addEventListener('resize', renderSports);
+        window.onclick = function(e) {
+            if (e.target.id === 'modal') closeModal();
+            if (e.target.id === 'addSportModal') toggleForm();
+        }
+
+        function handleViewToggle() {
+            isExpanded = !isExpanded;
+            window.location.hash = isExpanded ? 'view-all' : 'view-less';
+            renderSports();
+        }
+
+        window.addEventListener('hashchange', () => {
+            isExpanded = (window.location.hash === '#view-all');
+            renderSports();
+        });
+
+        // INITIALIZE ON LOAD
+        syncUserData();
+        renderSports();
+    </script>
+</body>
+</html>

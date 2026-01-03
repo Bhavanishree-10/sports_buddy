@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Buddy - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white w-full max-w-md p-8 rounded-3xl shadow-xl shadow-gray-200 border border-gray-100">
+        
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center justify-center w-14 h-14 bg-orange-100 rounded-2xl mb-4">
+                <i class="fas fa-volleyball-ball text-orange-600 text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-extrabold text-slate-900 italic tracking-tight">SPORTS<span class="text-orange-600">BUDDY</span></h1>
+            <p id="form-subtitle" class="text-slate-500 font-medium mt-1">Ready for your next match?</p>
+        </div>
+
+        <form id="auth-form" class="space-y-5" autocomplete="off">
+            <div id="name-field" class="hidden">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Full Name</label>
+                <input type="text" id="reg-name" placeholder="Alex Johnson" autocomplete="off"
+                       class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Email Address</label>
+                <input type="email" id="auth-email" required placeholder="name@example.com" autocomplete="off"
+                       class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Password</label>
+                <div class="relative">
+                    <input type="password" id="auth-pass" required placeholder="Enter password" autocomplete="new-password"
+                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all">
+                    
+                    <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-orange-600">
+                        <i class="fas fa-eye" id="eye-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <p id="error-msg" class="text-red-500 text-xs font-medium hidden text-center bg-red-50 py-2 rounded-lg"></p>
+
+            <button type="submit" id="submit-btn" 
+                    class="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl shadow-lg shadow-orange-200 transform active:scale-[0.98] transition-all uppercase tracking-wide">
+                Sign In
+            </button>
+        </form>
+
+        <p class="text-center text-slate-600 font-medium mt-8">
+            <span id="toggle-text">Need an account?</span> 
+            <button id="toggle-auth" class="text-orange-600 font-bold hover:underline ml-1">Register Here</button>
+        </p>
+    </div>
+
+    <script>
+        const authForm = document.getElementById('auth-form');
+        const nameField = document.getElementById('name-field');
+        const submitBtn = document.getElementById('submit-btn');
+        const toggleAuth = document.getElementById('toggle-auth');
+        const toggleText = document.getElementById('toggle-text');
+        const formSubtitle = document.getElementById('form-subtitle');
+        const errorMsg = document.getElementById('error-msg');
+        const passwordInput = document.getElementById('auth-pass');
+        const eyeIcon = document.getElementById('eye-icon');
+
+        let isLogin = true;
+
+        // Toggle Eye
+        document.getElementById('toggle-password').addEventListener('click', () => {
+            const isSecret = passwordInput.type === 'password';
+            passwordInput.type = isSecret ? 'text' : 'password';
+            eyeIcon.className = isSecret ? 'fas fa-eye-slash' : 'fas fa-eye';
+        });
+
+        // Toggle Login/Register
+        toggleAuth.addEventListener('click', () => {
+            isLogin = !isLogin;
+            nameField.classList.toggle('hidden');
+            submitBtn.innerText = isLogin ? 'Sign In' : 'Join Now';
+            toggleText.innerText = isLogin ? 'Need an account?' : 'Already a member?';
+            toggleAuth.innerText = isLogin ? 'Register Here' : 'Sign In';
+            errorMsg.classList.add('hidden');
+        });
+
+        // Auth Logic
+        authForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const pass = passwordInput.value;
+
+            // Admin Logic
+            if (email === "shreeadmin@gmail.com" && pass === "shree1010!") {
+                sessionStorage.setItem('isAdmin', 'true');
+                localStorage.setItem('user_name', 'Admin User');
+                localStorage.setItem('user_email', email);
+                window.location.href = 'admin.html';
+                return;
+            }
+
+            if (isLogin) {
+                const user = JSON.parse(localStorage.getItem(email));
+                if (user && user.password === pass) {
+                    localStorage.setItem('user_name', user.name);
+                    localStorage.setItem('user_email', user.email);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    showError("Invalid credentials. Please register first.");
+                }
+            } else {
+                const name = document.getElementById('reg-name').value;
+                if(!name) { showError("Please enter your name"); return; }
+                
+                localStorage.setItem(email, JSON.stringify({ name, email, password: pass }));
+                localStorage.setItem('user_name', name);
+                localStorage.setItem('user_email', email);
+                
+                window.location.href = 'dashboard.html';
+            }
+        });
+
+        function showError(text) {
+            errorMsg.innerText = text;
+            errorMsg.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

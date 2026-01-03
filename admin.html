@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SportsBuddy Admin | Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db; --dark: #0f172a; --bg: #f8fafc; --danger: #ef4444;
+        }
+
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; background: var(--bg); display: flex; }
+
+
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: var(--dark); height: 100vh; color: white; position: fixed; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 30px; font-size: 1.4rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-items { flex-grow: 1; }
+        .nav-item { padding: 15px 30px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; color: #94a3b8; }
+        .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
+        .nav-item.active { color: white; background: var(--primary); font-weight: 600; }
+        
+        .logout-btn { padding: 20px 30px; border-top: 1px solid rgba(255,255,255,0.1); color: #ef4444; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 600; }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.1); }
+
+        /* MAIN */
+        .main-content { margin-left: 260px; width: 100%; padding: 40px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; font-size: 1.25rem; color: var(--dark); margin-bottom: 20px; }
+
+        /* CONTROLS */
+        .action-bar { display: flex; gap: 10px; margin-bottom: 25px; background: #f1f5f9; padding: 15px; border-radius: 8px; }
+        input, select { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 0.9rem; }
+        .btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .btn-add { background: var(--primary); color: white; }
+        .btn-del { background: #fee2e2; color: var(--danger); border: none; padding: 8px; border-radius: 4px; cursor: pointer; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid #f1f5f9; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
+        td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">SB ADMIN</div>
+        <div class="nav-items">
+            <div class="nav-item active" onclick="showTab('sports', this)"><i class="fas fa-th-list"></i> Sports Categories</div>
+            <div class="nav-item" onclick="showTab('cities', this)"><i class="fas fa-city"></i> Cities</div>
+            <div class="nav-item" onclick="showTab('areas', this)"><i class="fas fa-map-marked-alt"></i> Areas</div>
+        </div>
+        <div class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
+    </div>
+
+    <div class="main-content">
+        <div id="sports-section" class="tab-content">
+            <div class="card">
+                <h2>Manage Sports Categories</h2>
+                <div class="action-bar">
+                    <input type="text" id="sport-input" placeholder="New Sport Name...">
+                    <button class="btn btn-add" onclick="addData('sports', 'sport-input')">Add Category</button>
+                </div>
+                <table>
+                    <thead><tr><th>Category Name</th><th>Action</th></tr></thead>
+                    <tbody id="sports-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="cities-section" class="tab-content hidden">
+            <div class="card">
+                <h2>Manage Cities</h2>
+                <div class="action-bar">
+                    <input type="text" id="city-input" placeholder="New City Name...">
+                    <button class="btn btn-add" onclick="addData('cities', 'city-input')">Add City</button>
+                </div>
+                <table>
+                    <thead><tr><th>City Name</th><th>Action</th></tr></thead>
+                    <tbody id="cities-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="areas-section" class="tab-content hidden">
+            <div class="card">
+                <h2>Manage Areas</h2>
+                <div class="action-bar">
+                    <select id="city-dropdown"></select>
+                    <input type="text" id="area-input" placeholder="Area Name...">
+                    <button class="btn btn-add" onclick="addArea()">Add Area</button>
+                </div>
+                <table>
+                    <thead><tr><th>City</th><th>Area</th><th>Action</th></tr></thead>
+                    <tbody id="areas-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db = {
+            sports: ['Basketball', 'Football', 'Badminton', 'Tennis', 'Cricket', 'Boxing', 'Swimming', 'Volleyball'],
+            cities: ['Chennai', 'Mumbai', 'Bangalore'],
+            areas: [{ city: 'Chennai', name: 'Adyar' }]
+        };
+
+        function checkLogin() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            if(u === 'admin' && p === 'admin') {
+                document.getElementById('loginOverlay').classList.add('hidden');
+                render();
+            } else { alert("Use admin / admin"); }
+        }
+
+        function logout() {
+            if(confirm("Are you sure you want to logout?")) {
+                // This line changes from location.reload() to a redirect
+                window.location.href = 'index.html'; 
+            }
+        }
+
+        function showTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId + '-section').classList.remove('hidden');
+            el.classList.add('active');
+        }
+
+        function render() {
+            ['sports', 'cities'].forEach(key => {
+                const body = document.getElementById(`${key}-body`);
+                body.innerHTML = db[key].map((item, i) => `
+                    <tr><td><strong>${item}</strong></td>
+                    <td><button class="btn-del" onclick="removeData('${key}', ${i})"><i class="fas fa-trash"></i></button></td></tr>
+                `).join('');
+            });
+
+            document.getElementById('areas-body').innerHTML = db.areas.map((area, i) => `
+                <tr><td>${area.city}</td><td><strong>${area.name}</strong></td>
+                <td><button class="btn-del" onclick="removeData('areas', ${i})"><i class="fas fa-trash"></i></button></td></tr>
+            `).join('');
+
+            const select = document.getElementById('city-dropdown');
+            select.innerHTML = '<option value="">Select City</option>' + 
+                db.cities.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        function addData(key, inputId) {
+            const val = document.getElementById(inputId).value;
+            if(val.trim()) { db[key].push(val); document.getElementById(inputId).value = ''; render(); }
+        }
+
+        function addArea() {
+            const city = document.getElementById('city-dropdown').value;
+            const name = document.getElementById('area-input').value;
+            if(city && name.trim()) { db.areas.push({ city, name }); document.getElementById('area-input').value = ''; render(); }
+        }
+
+        function removeData(key, index) {
+            if(confirm('Delete this item?')) { db[key].splice(index, 1); render(); }
+        }
+
+        render();
+
+        function showTab(tabId, el) {
+            // 1. Update the URL hash (e.g., admin.html#cities)
+            window.location.hash = tabId;
+
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId + '-section').classList.remove('hidden');
+            if(el) el.classList.add('active');
+        }
+
+        // 2. Add this listener to handle the browser's Back/Forward buttons
+        window.addEventListener('hashchange', () => {
+            const currentTab = window.location.hash.replace('#', '') || 'sports';
+            const targetNavItem = document.querySelector(`[onclick*="${currentTab}"]`);
+            
+            // Manually trigger the tab switch logic without looping the hash
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(currentTab + '-section').classList.remove('hidden');
+            if(targetNavItem) targetNavItem.classList.add('active');
+        });
+
+    </script>
+    <script type="module" src="scripts/admin-actions.js"></script>
+</body>
+</html>
